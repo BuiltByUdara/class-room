@@ -1,0 +1,22 @@
+// Disposable browser QA fixture. Never connects to the application database.
+import { randomBytes } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
+import { createApp } from '../src/app.js';
+import { readConfig } from '../src/config.js';
+import { User, Class, Enrollment, ParentStudentRelationship } from '../src/db/models.js';
+const db = await MongoMemoryReplSet.create({ binary: { downloadDir: fileURLToPath(new URL('../../../node_modules/.cache/mongodb-memory-server/',import.meta.url)) }, replSet: { count: 1 } });
+await mongoose.connect(db.getUri());
+await Promise.all(Object.values(mongoose.models).map(m => m.init()));
+const password = randomBytes(18).toString('base64url');
+const passwordHash = await bcrypt.hash(password,12);
+const [admin, teacher, student, parent] = await User.create(['admin','teacher','student','parent'].map(role => ({ name:`QA ${role}`,email:`${role}@example.test`,role,status:'active',passwordHash })));
+const cls = await Class.create({name:'Geometry Circle',subject:'Mathematics',grade:8,teacher:teacher._id});
+await Enrollment.create({class:cls._id,student:student._id});
+await ParentStudentRelationship.create({parent:parent._id,student:student._id,linkedBy:admin._id});
+const config = readConfig({NODE_ENV:'test',APP_ORIGIN:'http://localhost:5174',MONGODB_URI:db.getUri(),SMTP_HOST:'localhost',MAIL_FROM:'qa@example.test'});
+const server = createApp(config, async () => {}).listen(4001,'127.0.0.1', () => console.log(JSON.stringify({ url:'http://localhost:5174',email:admin.email,password,disposable:true })));
+const stop = () => { server.close(() => { void mongoose.disconnect().then(() => db.stop()).then(() => process.exit(0)); }); };
+process.on('SIGINT', stop); process.on('SIGTERM', stop);
