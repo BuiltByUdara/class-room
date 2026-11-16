@@ -1,0 +1,12 @@
+import {Router} from 'express';
+import {idSchema,progressFilterSchema,resultsFilterSchema} from '@tuition/contracts';
+import {authorize} from '../../middleware/auth.js';
+import {studentProgress,classPerformance} from './service.js';
+import {progressCsv} from '../reports/csv.js';
+export const progressRouter=Router();const router=progressRouter;
+router.get('/students/:id/progress',async(req,res)=>{const {results:_,...data}=await studentProgress(req.user!,idSchema.parse(req.params.id),progressFilterSchema.parse(req.query));res.json({data});});
+router.get('/parents/me/children/:id/progress',authorize('parent'),async(req,res)=>{const {results:_,...data}=await studentProgress(req.user!,idSchema.parse(req.params.id),progressFilterSchema.parse(req.query));res.json({data});});
+router.get('/students/:id/results',async(req,res)=>{const {page,limit,...filter}=resultsFilterSchema.parse(req.query);const data=await studentProgress(req.user!,idSchema.parse(req.params.id),filter);res.json({data:{items:data.results.slice((page-1)*limit,page*limit),meta:{page,limit,total:data.results.length}}});});
+router.get('/students/:id/progress-report',async(req,res)=>{const id=idSchema.parse(req.params.id);const progress=await studentProgress(req.user!,id,progressFilterSchema.parse(req.query));res.setHeader('Content-Type','text/csv; charset=utf-8');res.setHeader('Content-Disposition',`attachment; filename="progress-${id}.csv"`);res.send(progressCsv(progress,progress.results));});
+router.get('/classes/:id/performance',authorize('admin','teacher'),async(req,res)=>{res.json({data:await classPerformance(req.user!,idSchema.parse(req.params.id),progressFilterSchema.parse(req.query))});});
+router.get('/classes/:id/subjects',authorize('admin','teacher'),async(req,res)=>{const data=await classPerformance(req.user!,idSchema.parse(req.params.id),progressFilterSchema.parse(req.query));res.json({data:data.subjects});});

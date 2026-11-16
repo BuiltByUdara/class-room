@@ -1,0 +1,7 @@
+import type {ProgressData,ResultRow} from '@tuition/contracts';
+// Quote all cells and neutralize spreadsheet formula prefixes, including whitespace.
+export function csvCell(value:unknown):string {let text=value===null||value===undefined?'':String(value);if(/^[\s]*[=+\-@]/.test(text)||/^[\t\r\n]/.test(text))text=`'${text}`;return `"${text.replace(/"/g,'""')}"`;}
+export function progressCsv(progress:ProgressData,results:ResultRow[]) {
+  const rows:unknown[][]=[['Student',progress.student.name],['Generated at',progress.generatedAt],['Timezone',progress.timezone],['Policy',progress.policy],['From',progress.filter.from||'All time'],['To',progress.filter.to||'Present'],[],['Metric','Value'],...Object.entries(progress.summary),[],['Subject','Average percentage','Quizzes'],...progress.subjects.map(s=>[s.name,s.average,s.count]),[],['Topic','Earned marks','Possible marks','Percentage'],...progress.topics.map(t=>[t.name,t.earned,t.possible,t.percentage]),[],['Missed quiz','Subject','Closed at'],...progress.missedQuizzes.map(q=>[q.title,q.subject,q.endsAt]),[],['Quiz','Subject','Attempt','Submitted at','Score','Total marks','Percentage','Result','Publication'],...results.map(r=>[r.title,r.subject,r.attemptNumber,r.submittedAt,r.score,r.totalMarks,r.percentage,r.passed===null?'':r.passed?'Pass':'Fail',r.published?'Published to this viewer':'Awaiting publication'])];
+  return '\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n');
+}

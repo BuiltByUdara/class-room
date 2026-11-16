@@ -1,3 +1,13 @@
+# Phase 4 verification — 16 November 2026
+
+`npm run verify` passed: API/web TypeScript checks, all 67 tests across six files, and both production builds. Tests use isolated MongoDB, never the application database. The Phase 3 baseline of 48 tests also passed before this change.
+
+Browser QA used disposable parent/child fixtures on ports 4001/5174: switched between two children, confirmed empty states, verified published-only average 62.5%, pending result masking, completion 3/4, topic charts, and downloaded the CSV successfully. The downloaded report matched the dashboard. At a 390-pixel viewport the page width was also 390 pixels. Screenshots are in screenshots/phase4-parent-dashboard.jpg and screenshots/phase4-parent-mobile.jpg.
+
+Build warnings: upstream Zod annotations and a main web chunk above 500 kB; both builds succeeded. Recharts installation reported zero audit vulnerabilities. Production MongoDB setup, SMTP, real user login credentials, hosted browser cookie behavior, load testing and deployment remain unverified. No persistent account was created or production service deployed.
+
+---
+
 # Phase 1 verification — 12 November 2026
 
 ## Separate-deployment update

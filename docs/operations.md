@@ -43,9 +43,15 @@ Keep `TRUST_PROXY_HOPS=0` unless the hosting ingress is known. Behind exactly on
 
 Run `npm run verify` after configuring the local web environment. Integration tests cover authentication plus allowed/denied origins, preflights, cross-origin session use, logout, and Secure SameSite=None configuration. These API tests do not emulate browser cookie policies. Before deployment, test actual login, refresh, logout, password emails and SPA deep links from the intended browser and domains.
 
-Use provider-managed secrets, restrict database network access, monitor errors without logging credentials, and add durable email queuing before a public launch. Phases 1 and 2 are implemented; quizzes and academic reporting remain later phases.
+Use provider-managed secrets, restrict database network access, monitor errors without logging credentials, and add durable email queuing before a public launch. Phases 1–4 are implemented. Phase 5 production readiness remains unverified.
 
 ## Backup and recovery
 
 Use encrypted managed MongoDB snapshots and point-in-time recovery where available, least-privilege backup credentials, and off-account retention. Agree on RPO/RTO with the teacher; daily snapshots and 30-day retention are a starting proposal. Test restoration to a separate database before launch and quarterly. Invalidate sessions after recovery and verify indexes and access boundaries. Native database persistence alone is not a backup.
 
+
+## Quiz worker and reports
+
+The API runs deadline finalization every five seconds and catches expired attempts after restart. Keep the API running; browser timers are informational. MongoDB transaction support is required for quiz writes and attempt allocation as well as management writes. Reports read finalized attempts and can lag timeout finalization by one sweep interval. Progress GET requests do not mutate attempts.
+
+CSV reports require the same authenticated scope and publication checks as JSON reports. No report cache or public attachment URL is created. Scoped histories are aggregated in memory; benchmark realistic data volumes and review indexes before release. The web build currently warns about a main chunk above 500 kB; analytics and quizzes are lazy chunks. Distributed rate limits, durable mail delivery, production domain checks and backup recovery remain release work.

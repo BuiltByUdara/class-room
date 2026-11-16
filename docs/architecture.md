@@ -6,7 +6,7 @@ The platform serves one tuition provider and four roles. Teacher accounts are su
 
 Dates are stored as UTC instants and displayed in Asia/Colombo. One student can enroll in many classes and belongs to at most one batch per class initially. Parents can have many children and each child can have multiple parents. Relationship writes will require an administrator. An admin account can grant other admin accounts intentionally.
 
-Pending product decisions before Phase 2: exact grading scale, institution branding, class schedule recurrence, parent verification procedure, data retention period, production hosting and SMTP provider. Before Phase 3: permitted answer review timing, late-work policy, and accommodations. Proposed quiz defaults: exact-match multiple-answer scoring, no negative marks, no partial credit, timer capped by scheduled close, immutable published question content after attempts begin.
+Implemented quiz policy: exact-match scoring, no negative marks or partial credit, timer capped by scheduled close, immutable content after attempts begin, and explicitly controlled result publication/review. Analytics use latest-attempt summaries and Asia/Colombo reporting months. Institution branding, parent verification, retention, production hosting/SMTP and accommodations remain deployment/product decisions.
 
 ## System boundaries
 
@@ -37,7 +37,7 @@ Services hold reusable business rules; controllers parse input and format respon
 | Read results | All | Assigned classes | Published own | Published linked child |
 | Change own password / logout | Yes | Yes | Yes | Yes |
 
-Phases 1–2 implement invitations/authentication and user/class management permissions with query-level ownership, enrollment and parent-relationship constraints. Admins enroll new students; teachers can move their enrolled students between batches and remove enrollments. Quiz and result permissions remain design contracts for later phases.
+Phases 1–2 implement invitations/authentication and user/class management permissions with query-level ownership, enrollment and parent-relationship constraints. Admins enroll new students; teachers can move their enrolled students between batches and remove enrollments. Quiz and result permissions are enforced in Phases 3–4, including publication-aware family views.
 
 ## Full target folder structure
 
@@ -73,11 +73,11 @@ packages/contracts/src/index.ts
 docs/{architecture,database,api,operations}.md
 ```
 
-Phase 2 controllers are in `modules/classes/routes.ts`, supported by `modules/classes/service.ts`, `modules/users/service.ts` and `lib/transaction.ts`. The frontend management screens are in `features/management.tsx`. `tests/management.test.ts` verifies isolation and transactional invariants. Future phase folders remain scope notes. Add Recharts alongside real analytics in Phase 4.
+Phase 2 controllers are in `modules/classes/routes.ts`, supported by `modules/classes/service.ts`, `modules/users/service.ts` and `lib/transaction.ts`. The frontend management screens are in `features/management.tsx`. `tests/management.test.ts` verifies isolation and transactional invariants. Quiz routes/services and the expiry worker implement Phase 3. Progress calculations/services and CSV reports implement Phase 4. Recharts powers lazy-loaded analytics views. See phase3.md and phase4.md.
 
 ## Implementation phases and acceptance gates
 
-1. **Foundation (this change):** workspace, schemas, shared contracts, auth, invitation/reset email, responsive light/dark authenticated shell, protected routes. Gate: TypeScript/build pass and real-database API tests covering authentication, role denial, tokens, cookies, expiry, input validation and rate limits.
+1. **Foundation (implemented):** workspace, schemas, shared contracts, auth, invitation/reset email, responsive light/dark authenticated shell, protected routes. Gate: TypeScript/build pass and real-database API tests covering authentication, role denial, tokens, cookies, expiry, input validation and rate limits.
 2. **People and classes:** paginated user CRUD/deactivation, profile records, parent relationships, classes/batches, enrollments. Add service-level role/reference validation and ownership checks. Gate: negative cross-child/cross-class tests and actual CRUD UI validation; student data never leaks to unrelated parents.
 3. **Quiz engine:** teacher builder, publishing and duplication, eligible quiz list, persistent timed attempts, autosave, navigation, submission and grading. Freeze quiz content after first attempt. Use MongoDB replica-set transactions and atomic sequence allocation for attempt limits; optimistic versioning for autosave and compare-and-set final submission. Gate: grading unit tests plus race/duplicate/expiry/enrollment tests, refresh and offline retry checks. Timeout finalization must run on the server even without a browser.
 4. **Results and progress:** publication-aware student/parent views, child switcher, teacher analytics, Recharts trends and subject/topic summaries, downloadable reports. Compute aggregates from finalized attempts, define retake aggregation policy, distinguish unpublished from missing scores. Gate: linked-child isolation, publication filtering, aggregation fixtures and chart accessibility checks.

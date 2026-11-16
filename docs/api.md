@@ -51,26 +51,37 @@ Member is PublicUser plus `status`. Class is `{id,name,subject,grade,teacherId,s
 
 Updates are transactional and audited. Last-active-admin removal returns 409 `LAST_ADMIN`; role changes on referenced academic accounts return 409 `ROLE_IN_USE`. Invitations must be accepted before activation. Archiving an occupied batch returns 409 `BATCH_IN_USE`; moving or removing its students first resolves this. Archived classes remain visible to managers but are unavailable for new enrollments and hidden from students/parents. Student roster DTOs omit email and all authentication fields. Parent unlinking takes effect on the next API request. Management transactions require a replica set.
 
-## Planned contracts — not exposed yet
+## Implemented in Phase 3
 
-List endpoints use `page` (default 1), `limit` (default 20, maximum 100), explicit search/status filters, and `{data:{items:T[],meta:{page,limit,total}}}`. ObjectId parameters, dates, enums and pagination must be validated. Every query is scoped to the caller before pagination or aggregation.
+Manager means admin or the teacher owning the quiz class. Lists are paginated.
 
-| Phase | Endpoints | Authorization and contract |
-|---|---|---|
-| 3 | GET/POST /quizzes; GET/PATCH /quizzes/:id | Admin/owner teacher; student read stripped of answer keys |
-| 3 | POST /quizzes/:id/duplicate; POST /quizzes/:id/publish; POST /quizzes/:id/archive | Admin/owner teacher; copy creates draft with new IDs |
-| 3 | PUT /quizzes/:id/questions | Admin/owner teacher; validated array `{type,prompt,topic,marks,options:[{id,text}],correctOptionIds}` |
-| 3 | GET /quizzes/available | Student; active enrollment plus scheduling |
-| 3 | POST /quizzes/:id/attempts | Student; 201 new or 200 resumable `{id,deadline,serverTime,questions,answers,version}` |
-| 3 | GET /attempts/:id; PATCH /attempts/:id/answers | Owner student only; autosave `{version,answers:[{questionId,optionIds}]}`; 409 stale version |
-| 3 | POST /attempts/:id/submit | Owner student; atomic finalization, repeated submit returns existing finalization; never returns unpublished score |
-| 3 | PATCH /quizzes/:id/publication | Admin/owner teacher; `{resultsPublished,allowReview}` |
-| 4 | GET /students/:id/results; GET /students/:id/progress | Self, authorized teacher/admin or linked parent; publication filter mandatory |
-| 4 | GET /parents/me/children/:id/progress | Linked parent only; relationship checked on each request |
-| 4 | GET /classes/:id/performance; GET /classes/:id/subjects | Admin/assigned teacher |
-| 4 | GET /students/:id/progress-report | Same scope as progress; attachment response |
+| Method and path | Access and behavior |
+|---|---|
+| GET/POST /quizzes; GET/PATCH /quizzes/:id | Manager list/create/update; eligible students may read a safe individual quiz |
+| POST /quizzes/:id/duplicate | Manager; copies into a new draft |
+| POST /quizzes/:id/publish, /close, /archive | Manager; empty body; close/archive finalizes active attempts |
+| PATCH /quizzes/:id/publication | Manager; `{resultsPublished,allowReview}` |
+| GET /quizzes/available | Student; active enrollment and schedule |
+| POST /quizzes/:id/attempts | Student; empty body; 200 new or resumable attempt |
+| GET /attempts | Student's own attempts |
+| GET /quizzes/:id/attempts | Manager's quiz attempts |
+| GET /attempts/:id | Owner student; resume or finalized result |
+| PATCH /attempts/:id/answers | Owner student; `{version,answers:[{questionId,optionIds}]}` |
+| POST /attempts/:id/submit | Owner student; same answer/version body; idempotent finalization |
 
-Quiz mutation body: `{title,description,subject,classId,batchId?,durationSeconds,passingMarks,startsAt,endsAt,maxAttempts,randomizeQuestions,randomizeOptions,allowReview}`. Backend computes totals; caller cannot set scores. Attempts use server timestamps. Deadline is `min(startedAt+duration, endsAt)`. Random order is persisted and stable across refreshes. Saved answers never include correct-answer metadata. Network retry and duplicate finalization are idempotent; a later submitted answer must never alter a finalized score.
+Quiz create/update contains the full quiz settings and questions array; there is no separate questions endpoint. Exact validators and DTOs are in `packages/contracts/src/quizzes.ts`. The server derives totals, grading and deadlines. Content freezes after the first attempt. Stale autosaves return 409; unpublished scores and unauthorized answer keys are omitted. See phase3.md.
 
-Progress response: `{assigned,completed,missed,average,highest,lowest,passRate,completionRate,recentResults,monthly,subjects,topics}`. Zero-data metrics return null where an average is undefined, not a fabricated zero score. Define latest-versus-best retake policy before Phase 4 implementation. Use unique completed quiz counts for completion rates, distinct from total attempt counts.
+## Implemented in Phase 4
 
+| Method and path | Access and response |
+|---|---|
+| GET /students/:id/progress | Self, linked parent, owning teacher or admin; ProgressData |
+| GET /parents/me/children/:id/progress | Linked parent only; ProgressData |
+| GET /students/:id/results | Same scope; paginated ResultRow records |
+| GET /students/:id/progress-report | Same scope; CSV attachment |
+| GET /classes/:id/performance | Admin/owning teacher; ClassPerformance |
+| GET /classes/:id/subjects | Admin/owning teacher; subject averages |
+
+All accept optional inclusive ISO UTC `from`/`to`; results additionally accepts `page` and `limit` (maximum 100). Invalid or reversed ranges return 400. Parent relationships and teacher class ownership are checked on each request. Teacher student reports contain only that teacher's classes. Family responses exclude unpublished scores from all aggregates and export cells, retaining a pending-result indicator.
+
+ProgressData contains student, generatedAt, timezone, policy, filter, summary, monthly, subjects, topics, strengths, weaknesses, recentActivity and missedQuizzes. Summary includes assigned/completed/missed, attemptCount, pendingResults, visibleQuizzes, average/highest/lowest/latestScore, passRate and completionRate. Undefined metrics are null. Full DTO definitions are in `packages/contracts/src/progress.ts`; aggregation rules are documented in phase4.md.

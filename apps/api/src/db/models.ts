@@ -1,7 +1,7 @@
 import { Schema, model } from 'mongoose';
 import { roles } from '@tuition/contracts';
 const ref = (name: string, required = true) => ({ type: Schema.Types.ObjectId, ref: name, required });
-const options = { timestamps: true };
+const options = { timestamps: true } as const;
 const userSchema = new Schema({ name: { type: String, required: true, maxlength: 100 }, email: { type: String, required: true, unique: true, lowercase: true }, role: { type: String, enum: roles, required: true }, passwordHash: { type: String, select: false }, status: { type: String, enum: ['invited','active','inactive'], default: 'invited' }, credentialVersion: { type: Number, default: 0 }, resetTokenHash: { type: String, select: false }, resetExpiresAt: { type: Date, select: false } }, options);
 userSchema.index({ role: 1, status: 1, name: 1 });
 export const User = model('User', userSchema);
@@ -18,6 +18,7 @@ batch.index({ class: 1, name: 1 }, { unique: true });
 export const Batch = model('Batch', batch);
 const enrollment = new Schema({ student: ref('User'), class: ref('Class'), batch: ref('Batch', false), status: { type: String, enum: ['active','removed'], default: 'active' } }, options);
 enrollment.index({ student: 1, class: 1 }, { unique: true });
+enrollment.add({joinedAt:Date,batchJoinedAt:Date});
 enrollment.index({ class: 1, status: 1, student: 1 });
 export const Enrollment = model('Enrollment', enrollment);
 export const Quiz = model('Quiz', new Schema({ title: { type: String, required: true }, description: String, subject: { type: String, required: true }, class: ref('Class'), batch: ref('Batch', false), createdBy: ref('User'), durationSeconds: { type: Number, required: true, min: 60 }, passingMarks: { type: Number, required: true, min: 0 }, startsAt: { type: Date, required: true }, endsAt: { type: Date, required: true }, maxAttempts: { type: Number, min: 1, required: true }, randomizeQuestions: { type: Boolean, default: false }, randomizeOptions: { type: Boolean, default: false }, resultsPublished: { type: Boolean, default: false }, allowReview: { type: Boolean, default: false }, status: { type: String, enum: ['draft','scheduled','published','closed','archived'], default: 'draft' } }, options));

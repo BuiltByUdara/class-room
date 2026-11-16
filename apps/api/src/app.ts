@@ -11,6 +11,7 @@ import { authenticate, authorize } from './middleware/auth.js';
 import { frontendCors } from './middleware/cors.js';
 import { managementRouter } from './modules/classes/routes.js';
 import { quizRouter } from './modules/quizzes/routes.js';
+import { progressRouter } from './modules/progress/routes.js';
 import { login, resetPassword, sendPasswordLink, hashToken, publicUser } from './modules/auth/service.js';
 export function createApp(config: Config, sendMail: SendMail) {
   const app = express();
@@ -58,7 +59,7 @@ export function createApp(config: Config, sendMail: SendMail) {
   });
   app.get('/api/health', (_req, res) => { const ready = User.db.readyState === 1; res.status(ready ? 200 : 503).json({ data: { status: ready ? 'ready' : 'unavailable' } }); });
   app.use('/api/auth', (_req, _res, next) => next(new HttpError(404, 'NOT_FOUND', 'Endpoint not found')));
-  app.use('/api', authenticate(cookieName), managementRouter, quizRouter);
+  app.use('/api', authenticate(cookieName), managementRouter, quizRouter, progressRouter);
   app.use((_req, _res, next) => next(new HttpError(404, 'NOT_FOUND', 'Endpoint not found')));
   app.use(errorHandler);
   return app;

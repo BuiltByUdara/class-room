@@ -1,1 +1,3 @@
-# Phase 2 management screens are implemented in management.tsx. Quiz and analytics screens follow in Phases 3 and 4.
+# Feature screens
+
+management.tsx implements people/classes; quizzes.tsx implements quiz authoring and attempts; progress.tsx implements student/parent reports and manager analytics. Quiz and progress features are lazy-loaded.

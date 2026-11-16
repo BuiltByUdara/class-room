@@ -51,7 +51,7 @@ npm run verify
 
 Copy/configure the web `.env` before building; production builds require `VITE_API_URL`. Tests use an isolated MongoDB process and never touch the application database. The first test run may download its MongoDB binary.
 
-Phases 1–2 include authentication, invitations, member management and profiles, parent–student relationships, classes, batches, enrollment, and dashboards using actual counts. Quizzes and academic analytics remain future phases.
+Phases 1–4 include authentication, member/class management, timed quizzes with autosave and server grading, publication-aware student/parent progress, teacher analytics, charts, and CSV reports. Phase 5 release hardening remains.
 
 - [Architecture and roadmap](docs/architecture.md)
 - [Database relationships](docs/database.md)
@@ -59,3 +59,6 @@ Phases 1–2 include authentication, invitations, member management and profiles
 - [Deployment guide](docs/operations.md)
 - [Verification record](docs/verification.md)
 - [Phase 2 implementation and setup](docs/phase2.md)
+
+- [Phase 3 quiz engine](docs/phase3.md)
+- [Phase 4 analytics and reporting](docs/phase4.md)

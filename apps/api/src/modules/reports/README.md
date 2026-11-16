@@ -1,3 +1,3 @@
 # reports
 
-Planned module. See docs/architecture.md and docs/api.md for scope, implementation phase, and acceptance criteria. No endpoints are implemented in this directory yet.
+Implemented authenticated CSV reporting with publication filtering and formula escaping. See docs/phase4.md.

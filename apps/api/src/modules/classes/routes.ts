@@ -142,7 +142,9 @@ router.post('/classes/:id/enrollments', authorize('admin','teacher'), async (req
     await requireMember(input.studentId,'student',s);
     if (req.user!.role === 'teacher' && !await Enrollment.exists({ class: id, student: input.studentId, status: 'active' }).session(s)) throw new HttpError(403,'FORBIDDEN','An administrator must enroll new students');
     if (input.batchId && !await Batch.exists({ _id: input.batchId, class: id, status: 'active' }).session(s)) throw new HttpError(400,'INVALID_BATCH','Select an active batch belonging to this class');
-    const record = await Enrollment.findOneAndUpdate({ student: input.studentId, class: id }, { $set: { batch: input.batchId, status: 'active' } }, { upsert: true, new: true, runValidators: true, session: s }); return { id: record.id };
+    const previous=await Enrollment.findOne({student:input.studentId,class:id}).session(s);
+    const joining=!previous||previous.status==='removed';const changingBatch=joining||String(previous.batch||'')!==String(input.batchId||'');
+    const record = await Enrollment.findOneAndUpdate({ student: input.studentId, class: id }, { $set: { batch: input.batchId, status: 'active',...(joining?{joinedAt:new Date()}:{}),...(changingBatch?{batchJoinedAt:new Date()}:{}) } }, { upsert: true, new: true, runValidators: true, session: s }); return { id: record.id };
   }); res.json({ data });
 });
 router.delete('/classes/:id/enrollments/:studentId', authorize('admin','teacher'), async (req, res) => {

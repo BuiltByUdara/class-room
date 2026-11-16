@@ -1,5 +1,6 @@
 import { z } from 'zod';
 export * from './quizzes.js';
+export * from './progress.js';
 export const roles = ['admin', 'teacher', 'student', 'parent'] as const;
 export type Role = typeof roles[number];
 export const emailSchema = z.string().trim().email().max(254).transform(v => v.toLowerCase());
