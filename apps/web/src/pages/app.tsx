@@ -8,7 +8,12 @@ import { inviteSchema, loginSchema, resetRequestSchema, resetSchema, type Public
 import { ArrowRight, BookOpen, Check, GraduationCap, LayoutDashboard, LogOut, Menu, Moon, ShieldCheck, Sun, UserPlus, X } from 'lucide-react';
 import { api, ApiFailure } from '../lib/api';
 import { Button } from '../components/ui/button';
-import { WorkspaceOverview, Members, Relationships, Classes, ClassDetail, Children } from '../features/management';
+const WorkspaceOverview=lazy(()=>import('../features/management').then(m=>({default:m.WorkspaceOverview})));
+const Members=lazy(()=>import('../features/management').then(m=>({default:m.Members})));
+const Relationships=lazy(()=>import('../features/management').then(m=>({default:m.Relationships})));
+const Classes=lazy(()=>import('../features/management').then(m=>({default:m.Classes})));
+const ClassDetail=lazy(()=>import('../features/management').then(m=>({default:m.ClassDetail})));
+const Children=lazy(()=>import('../features/management').then(m=>({default:m.Children})));
 const Quizzes=lazy(()=>import('../features/quizzes').then(m=>({default:m.Quizzes})));
 const QuizEditor=lazy(()=>import('../features/quizzes').then(m=>({default:m.QuizEditor})));
 const QuizManagement=lazy(()=>import('../features/quizzes').then(m=>({default:m.QuizManagement})));

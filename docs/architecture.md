@@ -84,3 +84,7 @@ Phase 2 controllers are in `modules/classes/routes.ts`, supported by `modules/cl
 5. **Release:** cross-browser/mobile/accessibility checks, deployment hardening, distributed throttling if needed, database migration/index rollout, load tests, monitoring, backup restoration drill, retention policies and operational review. Gate: production-like end-to-end run and recovery test before claiming production readiness.
 
 Each phase must update shared contracts, implementation, API specification, tests and operational notes together. Do not advance a phase with known failed verification.
+
+## Phase 5 status
+
+Local startup/index checks, bounded shutdown/SMTP, safe failure correlation, static-host policies, bundle deduplication and CI configuration are implemented. Production acceptance still requires the target-environment gates in phase5.md; no release-readiness claim follows from local tests alone.

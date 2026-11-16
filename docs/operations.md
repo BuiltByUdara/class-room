@@ -10,7 +10,7 @@ Use `npm ci` including development dependencies in the build stage. Web: `npm ru
 
 Set `VITE_API_URL` before building, e.g. `https://api.example.com`. This is the API origin, without `/api` or any path. Builds reject a missing/invalid origin. Rebuild when changing it. Configure the static host to serve `/index.html` for client routes such as `/login`, `/set-password`, and `/invite`. Assets must be served normally. There is no Vite API proxy.
 
-Apply static-host security headers and a CSP permitting connections to the configured API origin. Never put database, SMTP, or bootstrap secrets into frontend environment variables.
+Web builds now emit `_headers` and `_redirects`. Apply them on hosts supporting that syntax, or copy their rules into your host configuration; merely uploading the files does not configure every host. The generated CSP permits the configured API origin. Never put database, SMTP, or bootstrap secrets into frontend environment variables.
 
 ## API environment
 
@@ -43,7 +43,7 @@ Keep `TRUST_PROXY_HOPS=0` unless the hosting ingress is known. Behind exactly on
 
 Run `npm run verify` after configuring the local web environment. Integration tests cover authentication plus allowed/denied origins, preflights, cross-origin session use, logout, and Secure SameSite=None configuration. These API tests do not emulate browser cookie policies. Before deployment, test actual login, refresh, logout, password emails and SPA deep links from the intended browser and domains.
 
-Use provider-managed secrets, restrict database network access, monitor errors without logging credentials, and add durable email queuing before a public launch. Phases 1–4 are implemented. Phase 5 production readiness remains unverified.
+Use provider-managed secrets, restrict database network access, monitor errors without logging credentials, and add durable email queuing before a public launch. Phases 1–4 are implemented. Phase 5 local hardening is implemented; production readiness remains gated by [the release checklist](phase5.md).
 
 ## Backup and recovery
 
@@ -54,4 +54,10 @@ Use encrypted managed MongoDB snapshots and point-in-time recovery where availab
 
 The API runs deadline finalization every five seconds and catches expired attempts after restart. Keep the API running; browser timers are informational. MongoDB transaction support is required for quiz writes and attempt allocation as well as management writes. Reports read finalized attempts and can lag timeout finalization by one sweep interval. Progress GET requests do not mutate attempts.
 
-CSV reports require the same authenticated scope and publication checks as JSON reports. No report cache or public attachment URL is created. Scoped histories are aggregated in memory; benchmark realistic data volumes and review indexes before release. The web build currently warns about a main chunk above 500 kB; analytics and quizzes are lazy chunks. Distributed rate limits, durable mail delivery, production domain checks and backup recovery remain release work.
+CSV reports require the same authenticated scope and publication checks as JSON reports. No report cache or public attachment URL is created. Scoped histories are aggregated in memory; benchmark realistic data volumes and review indexes before release. Management, analytics and quizzes are lazy chunks; Zod is deduplicated in the web build. Distributed rate limits, durable mail delivery, production domain checks and backup recovery remain release work.
+
+## Startup and deployment checks
+
+Before starting a production API, run the database/index release checks described in [Phase 5](phase5.md). Production startup requires transaction support and all declared indexes. Index creation is an explicit maintenance step. Termination drains work for up to 30 seconds; give the host a longer termination grace period and monitor unsuccessful exits.
+
+Request failures can be correlated using the X-Request-ID response header and structured error event, without logging bodies, cookies or reset links. Production SMTP requires TLS (implicit TLS or STARTTLS); connection, greeting and socket timeouts are bounded. Authentication rate limiting is still in memory: deploy one API instance until shared/edge throttling is verified. The expiry worker is not a durable email queue.

@@ -11,7 +11,10 @@
     "bootstrap:hosted": "tsx src/scripts/bootstrap.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "bootstrap": "tsx --env-file=.env src/scripts/bootstrap.ts"
+    "bootstrap": "tsx --env-file=.env src/scripts/bootstrap.ts",
+    "release:check": "tsx src/scripts/release-check.ts",
+    "release:check:local": "tsx --env-file=.env src/scripts/release-check.ts",
+    "indexes:apply": "tsx src/scripts/release-check.ts --apply-indexes"
   },
   "dependencies": {
     "@tuition/contracts": "*",

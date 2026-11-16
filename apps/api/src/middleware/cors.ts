@@ -9,6 +9,7 @@ export const frontendCors = (allowedOrigin: string): RequestHandler => (req, res
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Expose-Headers', 'X-Request-ID');
   }
   if (req.method === 'OPTIONS') {
     const method = req.get('access-control-request-method');

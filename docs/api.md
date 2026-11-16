@@ -85,3 +85,7 @@ Quiz create/update contains the full quiz settings and questions array; there is
 All accept optional inclusive ISO UTC `from`/`to`; results additionally accepts `page` and `limit` (maximum 100). Invalid or reversed ranges return 400. Parent relationships and teacher class ownership are checked on each request. Teacher student reports contain only that teacher's classes. Family responses exclude unpublished scores from all aggregates and export cells, retaining a pending-result indicator.
 
 ProgressData contains student, generatedAt, timezone, policy, filter, summary, monthly, subjects, topics, strengths, weaknesses, recentActivity and missedQuizzes. Summary includes assigned/completed/missed, attemptCount, pendingResults, visibleQuizzes, average/highest/lowest/latestScore, passRate and completionRate. Undefined metrics are null. Full DTO definitions are in `packages/contracts/src/progress.ts`; aggregation rules are documented in phase4.md.
+
+## Release diagnostics
+
+API responses carry a generated X-Request-ID, exposed to the configured web origin by CORS. Generic errors include requestId for correlation. Unhandled failures log this identifier without request bodies/URLs or driver messages. Parsing and rejected-origin responses also use Cache-Control: no-store.

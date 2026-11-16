@@ -1,3 +1,13 @@
+# Phase 5 local verification - 16 November 2026
+
+Final `npm run verify` passed: both TypeScript checks, 71 tests across seven files, and independent API/web production builds. The release-check CLI ran successfully against an isolated replica set and preserved the user count. The management suite also exercised an actual transactional readiness read. New tests cover unsupported topology, request IDs, cache policy on malformed/CORS errors, and secret-free failure logging.
+
+The main web chunk decreased from 588.87 kB in Phase 4 to 503.90 kB (about 14%). Deduplicating Zod also reduced the lazy management chunk to 16.71 kB. The main chunk still triggers the 500 kB advisory; upstream Zod annotation warnings remain. Generated deployment artifacts include _headers and _redirects.
+
+No browser visual changes were made; the earlier Phase 4 browser evidence remains historical, not a new cross-browser audit. CI was configured but not run remotely. SMTP TLS, deployed CSP, production startup/shutdown under host orchestration, realistic load and backup restoration still require target-environment verification. No production account or database was modified. See phase5.md for launch gates.
+
+---
+
 # Phase 4 verification — 16 November 2026
 
 `npm run verify` passed: API/web TypeScript checks, all 67 tests across six files, and both production builds. Tests use isolated MongoDB, never the application database. The Phase 3 baseline of 48 tests also passed before this change.

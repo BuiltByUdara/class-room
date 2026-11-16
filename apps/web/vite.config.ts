@@ -11,5 +11,21 @@ export default defineConfig(({ mode, command }) => {
     if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== apiUrl.replace(/\/$/, '')) throw new Error('VITE_API_URL must be an HTTP(S) origin without a path');
     if (parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) throw new Error('A deployed API must use HTTPS');
   }
-  return { plugins: [react(), tailwindcss()], resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } }, server: { port: 5173, strictPort: true } };
+  return { plugins: [react(), tailwindcss(), {
+    name: 'deployment-headers',
+    generateBundle() {
+      const origin = new URL(apiUrl!).origin;
+      this.emitFile({ type: 'asset', fileName: '_headers', source: `/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${origin}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+  Cache-Control: no-cache
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+` });
+      this.emitFile({ type: 'asset', fileName: '_redirects', source: '/* /index.html 200\n' });
+    },
+  }], resolve: { dedupe: ['zod'], alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } }, server: { port: 5173, strictPort: true } };
 });

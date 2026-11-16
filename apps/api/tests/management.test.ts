@@ -1,3 +1,5 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import mongoose from 'mongoose';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
@@ -7,6 +9,7 @@ import { createApp } from '../src/app.js';
 import { readConfig } from '../src/config.js';
 import { User, Session, Class, Batch, Enrollment, ParentStudentRelationship, StudentProfile, AdministrationLock } from '../src/db/models.js';
 import { hashToken } from '../src/modules/auth/service.js';
+import { checkDatabase } from '../src/lib/readiness.js';
 
 const config = readConfig({ NODE_ENV:'test', MONGODB_URI:'mongodb://localhost/test', SMTP_HOST:'localhost', MAIL_FROM:'test@example.com' });
 const app = createApp(config, async () => {});
@@ -18,6 +21,7 @@ beforeAll(async () => {
   db = await MongoMemoryReplSet.create({ replSet: { count:1, storageEngine:'wiredTiger' } });
   await mongoose.connect(db.getUri());
   await Promise.all(Object.values(mongoose.models).map(model => model.init()));
+  await checkDatabase();
 },120000);
 beforeEach(async () => {
   await Promise.all(Object.values(mongoose.connection.collections).map(c => c.deleteMany({})));
@@ -125,3 +129,13 @@ describe('Phase 2 management and isolation', () => {
     expect((await call('otherParent','get','/dashboard')).body.data).toEqual({classes:0,students:0,batches:0,children:0});
   });
 });
+
+it('runs the read-only release check against a real isolated replica set', async () => {
+  const before = await User.countDocuments();
+  const { stdout } = await promisify(execFile)(process.execPath, ['--import', 'tsx', 'src/scripts/release-check.ts'], {
+    env: { ...process.env, NODE_ENV: 'test', MONGODB_URI: db.getUri(), SMTP_HOST: 'localhost', MAIL_FROM: 'test@example.com' },
+    timeout: 30000,
+  });
+  expect(stdout).toContain('"status":"passed"');
+  expect(await User.countDocuments()).toBe(before);
+}, 35000);

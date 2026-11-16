@@ -51,7 +51,7 @@ npm run verify
 
 Copy/configure the web `.env` before building; production builds require `VITE_API_URL`. Tests use an isolated MongoDB process and never touch the application database. The first test run may download its MongoDB binary.
 
-Phases 1–4 include authentication, member/class management, timed quizzes with autosave and server grading, publication-aware student/parent progress, teacher analytics, charts, and CSV reports. Phase 5 release hardening remains.
+Phases 1–4 include authentication, member/class management, timed quizzes with autosave and server grading, publication-aware student/parent progress, teacher analytics, charts, and CSV reports. Phase 5 local release hardening is implemented; target-environment launch gates remain in the Phase 5 guide.
 
 - [Architecture and roadmap](docs/architecture.md)
 - [Database relationships](docs/database.md)
@@ -62,3 +62,5 @@ Phases 1–4 include authentication, member/class management, timed quizzes with
 
 - [Phase 3 quiz engine](docs/phase3.md)
 - [Phase 4 analytics and reporting](docs/phase4.md)
+
+- [Phase 5 release checks and launch gates](docs/phase5.md)

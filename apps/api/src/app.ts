@@ -9,6 +9,7 @@ import { errorHandler, HttpError } from './lib/errors.js';
 import { User, Session, AuditLog } from './db/models.js';
 import { authenticate, authorize } from './middleware/auth.js';
 import { frontendCors } from './middleware/cors.js';
+import { requestContext } from './middleware/request-context.js';
 import { managementRouter } from './modules/classes/routes.js';
 import { quizRouter } from './modules/quizzes/routes.js';
 import { progressRouter } from './modules/progress/routes.js';
@@ -20,11 +21,11 @@ export function createApp(config: Config, sendMail: SendMail) {
   app.disable('x-powered-by');
   if (config.TRUST_PROXY_HOPS > 0) app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.use(helmet());
+  app.use('/api', requestContext);
   app.use('/api', frontendCors(config.APP_ORIGIN));
   app.use('/api/quizzes',express.json({limit:'1mb'}));
   app.use('/api/attempts',express.json({limit:'128kb'}));
   app.use(express.json({ limit: '16kb' }), cookieParser());
-  app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
   app.use('/api', (req, _res, next) => {
     if (!['GET','HEAD','OPTIONS'].includes(req.method) && (req.get('origin') !== config.APP_ORIGIN || req.get('x-requested-with') !== 'tuition-web')) throw new HttpError(403, 'INVALID_ORIGIN', 'Request origin could not be verified');
     next();
