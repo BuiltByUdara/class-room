@@ -29,7 +29,7 @@ npm run release:check -w @tuition/api
 
 Index creation can fail if historical data violates a unique constraint or an existing index has incompatible options. Resolve the data/index conflict explicitly; the tool does not delete data or drop indexes. Local read-only checking uses `npm run release:check:local -w @tuition/api` to load apps/api/.env. Do not point tests or disposable fixtures at the real database.
 
-Build/deploy web and API independently using docs/operations.md. Keep one API instance until shared rate limiting is implemented or an equivalent trusted edge policy is verified: authentication throttles are still process-local. Do not use the CI example API URL in a real web deployment.
+Build/deploy web and API independently using docs/operations.md. Authentication counters now use shared MongoDB storage; see [shared throttling](shared-throttling.md) for index rollout and consistent proxy configuration. Multi-instance load and failover checks are still required. Do not use the CI example API URL in a real web deployment.
 
 ## Launch gates requiring the target environment
 
@@ -47,4 +47,4 @@ Build/deploy web and API independently using docs/operations.md. Keep one API in
 
 For a recovery drill, use an isolated restore destination and credentials; never restore over the live database. Run the release check against the restored copy, compare anonymized record counts and known sample results, and confirm users cannot reuse restored sessions. Record measured recovery time and backup age. No backup was created or restored during local development.
 
-Durable email queuing, shared throttling, large-history query optimization and a full cross-browser/accessibility audit remain open. No production deployment, real account creation, actual SMTP delivery or hosted-domain verification is claimed by this phase.
+Durable email queuing, large-history query optimization and a full cross-browser/accessibility audit remain open. No production deployment, real account creation, actual SMTP delivery or hosted-domain verification is claimed by this phase.

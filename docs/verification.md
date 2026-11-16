@@ -1,3 +1,11 @@
+# Shared throttling verification - 16 November 2026
+
+The complete verification run passed both TypeScript checks, 76 tests across eight files and both production builds. After adding majority write acknowledgement to counter updates, the API typecheck, all five focused counter tests and the API build passed again. Tests used disposable MongoDB databases only.
+
+Verified atomic 40-request concurrency, shared budgets across independent app instances and a recreated app, expiration without TTL cleanup, scope/client isolation and safe 503 failures. Live multi-host deployment, primary failover and production capacity were not tested. Existing web bundle/Zod advisories remain unchanged. Production rollout requires the new RateLimitCounters TTL index; see shared-throttling.md.
+
+---
+
 # Phase 5 local verification - 16 November 2026
 
 Final `npm run verify` passed: both TypeScript checks, 71 tests across seven files, and independent API/web production builds. The release-check CLI ran successfully against an isolated replica set and preserved the user count. The management suite also exercised an actual transactional readiness read. New tests cover unsupported topology, request IDs, cache policy on malformed/CORS errors, and secret-free failure logging.

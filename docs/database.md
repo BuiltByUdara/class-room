@@ -42,3 +42,5 @@ Phase 2 implements role-aware reference checks, user role/status and class enrol
 Soft deletion uses status on users/classes/batches/enrollments and archival on quizzes. Users with historical attempts must not be hard-deleted by ordinary account management. Retention and anonymization require an explicit institution policy in Phase 5.
 
 Analytics are derived from finalized attempts, without a separate cached results collection. Topic grades are calculated server-side from snapshots; answer keys never appear in progress DTOs. Enrollment restoration and batch changes record new effective join dates; legacy records fall back to createdAt. Historical submitted results remain reportable after removal/archive.
+
+RateLimitCounters contains a digest key, hits and expiresAt with a TTL index. Atomic updates use the database clock; TTL deletion is cleanup only. This collection is operational state and contains no raw client IP or email. See shared-throttling.md.

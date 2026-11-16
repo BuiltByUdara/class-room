@@ -10,6 +10,7 @@ import { User, Session, AuditLog } from './db/models.js';
 import { authenticate, authorize } from './middleware/auth.js';
 import { frontendCors } from './middleware/cors.js';
 import { requestContext } from './middleware/request-context.js';
+import { MongoRateLimitStore } from './lib/rate-limit-store.js';
 import { managementRouter } from './modules/classes/routes.js';
 import { quizRouter } from './modules/quizzes/routes.js';
 import { progressRouter } from './modules/progress/routes.js';
@@ -30,9 +31,9 @@ export function createApp(config: Config, sendMail: SendMail) {
     if (!['GET','HEAD','OPTIONS'].includes(req.method) && (req.get('origin') !== config.APP_ORIGIN || req.get('x-requested-with') !== 'tuition-web')) throw new HttpError(403, 'INVALID_ORIGIN', 'Request origin could not be verified');
     next();
   });
-  const limiter = (limit: number) => rateLimit({ windowMs: 15 * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Too many requests. Try again in 15 minutes.' } } });
-  app.use('/api/auth', limiter(60));
-  app.post('/api/auth/login', limiter(10), async (req, res) => {
+  const limiter = (scope: string, limit: number) => rateLimit({ store: new MongoRateLimitStore(scope), passOnStoreError: false, windowMs: 15 * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: { code: 'RATE_LIMIT', message: 'Too many requests. Try again in 15 minutes.' } } });
+  app.use('/api/auth', limiter('auth', 60));
+  app.post('/api/auth/login', limiter('login', 10), async (req, res) => {
     const input = loginSchema.parse(req.body);
     const result = await login(input.email, input.password, config);
     if (typeof req.cookies[cookieName] === 'string') await Session.deleteOne({ tokenHash: hashToken(req.cookies[cookieName]) });
@@ -43,13 +44,13 @@ export function createApp(config: Config, sendMail: SendMail) {
     res.clearCookie(cookieName, cookieOptions).status(204).end();
   });
   app.get('/api/auth/me', authenticate(cookieName), (req, res) => { res.json({ data: { user: req.user } }); });
-  app.post('/api/auth/password/forgot', limiter(5), async (req, res) => {
+  app.post('/api/auth/password/forgot', limiter('forgot', 5), async (req, res) => {
     const { email } = resetRequestSchema.parse(req.body);
     const user = await User.findOne({ email, status: { $in: ['active','invited'] } });
     if (user) { try { await sendPasswordLink(user, config, sendMail, user.status === 'invited'); } catch { console.error('Password email delivery failed'); } }
     res.status(202).json({ data: { message: 'If the account is eligible, a password link will be emailed.' } });
   });
-  app.post('/api/auth/password/reset', limiter(10), async (req, res) => { const input = resetSchema.parse(req.body); await resetPassword(input.token, input.password); res.clearCookie(cookieName, cookieOptions).status(204).end(); });
+  app.post('/api/auth/password/reset', limiter('reset', 10), async (req, res) => { const input = resetSchema.parse(req.body); await resetPassword(input.token, input.password); res.clearCookie(cookieName, cookieOptions).status(204).end(); });
   app.post('/api/users/invitations', authenticate(cookieName), authorize('admin'), async (req, res) => {
     const input = inviteSchema.parse(req.body);
     const user = await User.create(input);

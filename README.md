@@ -64,3 +64,5 @@ Phases 1–4 include authentication, member/class management, timed quizzes with
 - [Phase 4 analytics and reporting](docs/phase4.md)
 
 - [Phase 5 release checks and launch gates](docs/phase5.md)
+
+- [Shared authentication throttling and rollout](docs/shared-throttling.md)

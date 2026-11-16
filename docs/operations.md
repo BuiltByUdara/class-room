@@ -37,7 +37,7 @@ Recommended topology: `https://app.example.com` and `https://api.example.com` on
 
 For entirely unrelated frontend/API domains, use `COOKIE_SAME_SITE=none`. Secure cookies require HTTPS; configuration rejects this mode outside production. Some browsers block third-party cookies regardless of CORS. Use same-site custom subdomains if login fails due to cookie blocking. See [MDN CORS and third-party cookie policies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS).
 
-Keep `TRUST_PROXY_HOPS=0` unless the hosting ingress is known. Behind exactly one enforced proxy, 1 may be appropriate; direct access to the API must then be blocked by network policy. Variable-length or bypassable paths require a deployment-specific trust function, not an arbitrary hop count. Wrong proxy trust can allow rate-limit bypass or group users under one IP. Use a shared rate-limit store before horizontally scaling.
+Keep `TRUST_PROXY_HOPS=0` unless the hosting ingress is known. Behind exactly one enforced proxy, 1 may be appropriate; direct access to the API must then be blocked by network policy. Variable-length or bypassable paths require a deployment-specific trust function, not an arbitrary hop count. Wrong proxy trust can allow rate-limit bypass or group users under one IP. Authentication limits now share MongoDB counters; all API instances must use the same database and consistent proxy settings. Benchmark before scaling.
 
 ## Verification and release
 
@@ -54,10 +54,10 @@ Use encrypted managed MongoDB snapshots and point-in-time recovery where availab
 
 The API runs deadline finalization every five seconds and catches expired attempts after restart. Keep the API running; browser timers are informational. MongoDB transaction support is required for quiz writes and attempt allocation as well as management writes. Reports read finalized attempts and can lag timeout finalization by one sweep interval. Progress GET requests do not mutate attempts.
 
-CSV reports require the same authenticated scope and publication checks as JSON reports. No report cache or public attachment URL is created. Scoped histories are aggregated in memory; benchmark realistic data volumes and review indexes before release. Management, analytics and quizzes are lazy chunks; Zod is deduplicated in the web build. Distributed rate limits, durable mail delivery, production domain checks and backup recovery remain release work.
+CSV reports require the same authenticated scope and publication checks as JSON reports. No report cache or public attachment URL is created. Scoped histories are aggregated in memory; benchmark realistic data volumes and review indexes before release. Management, analytics and quizzes are lazy chunks; Zod is deduplicated in the web build. Durable mail delivery, production domain checks and backup recovery remain release work.
 
 ## Startup and deployment checks
 
 Before starting a production API, run the database/index release checks described in [Phase 5](phase5.md). Production startup requires transaction support and all declared indexes. Index creation is an explicit maintenance step. Termination drains work for up to 30 seconds; give the host a longer termination grace period and monitor unsuccessful exits.
 
-Request failures can be correlated using the X-Request-ID response header and structured error event, without logging bodies, cookies or reset links. Production SMTP requires TLS (implicit TLS or STARTTLS); connection, greeting and socket timeouts are bounded. Authentication rate limiting is still in memory: deploy one API instance until shared/edge throttling is verified. The expiry worker is not a durable email queue.
+Request failures can be correlated using the X-Request-ID response header and structured error event, without logging bodies, cookies or reset links. Production SMTP requires TLS (implicit TLS or STARTTLS); connection, greeting and socket timeouts are bounded. Authentication rate limiting now uses MongoDB with majority-acknowledged atomic counters and fails closed if the store is unavailable. See shared-throttling.md for rollout details. The expiry worker is not a durable email queue.
