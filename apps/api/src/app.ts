@@ -10,6 +10,7 @@ import { User, Session, AuditLog } from './db/models.js';
 import { authenticate, authorize } from './middleware/auth.js';
 import { frontendCors } from './middleware/cors.js';
 import { managementRouter } from './modules/classes/routes.js';
+import { quizRouter } from './modules/quizzes/routes.js';
 import { login, resetPassword, sendPasswordLink, hashToken, publicUser } from './modules/auth/service.js';
 export function createApp(config: Config, sendMail: SendMail) {
   const app = express();
@@ -19,6 +20,8 @@ export function createApp(config: Config, sendMail: SendMail) {
   if (config.TRUST_PROXY_HOPS > 0) app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.use(helmet());
   app.use('/api', frontendCors(config.APP_ORIGIN));
+  app.use('/api/quizzes',express.json({limit:'1mb'}));
+  app.use('/api/attempts',express.json({limit:'128kb'}));
   app.use(express.json({ limit: '16kb' }), cookieParser());
   app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
   app.use('/api', (req, _res, next) => {
@@ -55,7 +58,7 @@ export function createApp(config: Config, sendMail: SendMail) {
   });
   app.get('/api/health', (_req, res) => { const ready = User.db.readyState === 1; res.status(ready ? 200 : 503).json({ data: { status: ready ? 'ready' : 'unavailable' } }); });
   app.use('/api/auth', (_req, _res, next) => next(new HttpError(404, 'NOT_FOUND', 'Endpoint not found')));
-  app.use('/api', authenticate(cookieName), managementRouter);
+  app.use('/api', authenticate(cookieName), managementRouter, quizRouter);
   app.use((_req, _res, next) => next(new HttpError(404, 'NOT_FOUND', 'Endpoint not found')));
   app.use(errorHandler);
   return app;

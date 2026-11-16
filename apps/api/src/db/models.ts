@@ -25,6 +25,9 @@ const question = new Schema({ quiz: ref('Quiz'), position: { type: Number, requi
 question.index({ quiz: 1, position: 1 }, { unique: true });
 export const Question = model('Question', question);
 const attempt = new Schema({ quiz: ref('Quiz'), student: ref('User'), attemptNumber: { type: Number, min: 1, required: true }, startedAt: { type: Date, required: true }, deadline: { type: Date, required: true }, submittedAt: Date, status: { type: String, enum: ['in_progress','submitted'], default: 'in_progress' }, questionOrder: [Schema.Types.ObjectId], answers: [{ question: ref('Question'), optionIds: [String], _id: false }], score: Number, totalMarks: Number, percentage: Number, passed: Boolean }, options);
+const snapshotQuestion = new Schema({ id: {type:String,required:true}, type:{type:String,required:true}, prompt:{type:String,required:true}, topic:{type:String,required:true}, marks:{type:Number,required:true}, options:[{id:String,text:String,_id:false}], correctOptionIds:[String] }, { _id:false });
+attempt.add({ snapshot: { type:[snapshotQuestion],select:false }, quizTitle:String, passingMarks:Number, version:{type:Number,default:0} });
+attempt.index({ status:1,deadline:1 });
 attempt.index({ student: 1, quiz: 1, attemptNumber: 1 }, { unique: true });
 attempt.index({ student: 1, quiz: 1 }, { unique: true, partialFilterExpression: { status: 'in_progress' } });
 export const QuizAttempt = model('QuizAttempt', attempt);
