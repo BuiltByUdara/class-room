@@ -91,3 +91,5 @@ ProgressData contains student, generatedAt, timezone, policy, filter, summary, m
 API responses carry a generated X-Request-ID, exposed to the configured web origin by CORS. Generic errors include requestId for correlation. Unhandled failures log this identifier without request bodies/URLs or driver messages. Parsing and rejected-origin responses also use Cache-Control: no-store.
 
 Authentication budgets are shared across API instances using MongoDB. Exhaustion returns 429 RATE_LIMIT with Retry-After; counter-store failures return 503 RATE_LIMIT_UNAVAILABLE. Limits and rollout are described in shared-throttling.md.
+
+Quiz question inputs now accept optional imageUrl (Google Drive file link, maximum 2048 characters) and imageAlt (maximum 500 characters). Both are returned in manager quiz questions and safe student attempt questions, including snapshots. Non-Drive/unsafe image links return 400. Text-only inputs remain valid. See quiz-images.md.

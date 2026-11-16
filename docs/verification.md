@@ -1,3 +1,11 @@
+# Quiz images verification - 16 November 2026
+
+TypeScript checks and all 91 tests across nine files passed. New tests cover Drive link conversion, resource keys, unsafe-link rejection, text-only compatibility and image persistence through quiz editing, duplication, snapshot/resume and submission. Both production builds passed with the existing main-bundle size and Zod annotation advisories.
+
+Browser QA loaded the user-supplied Drive image, saved a disposable quiz and reopened the editor. The image remained loaded (natural size 1080 x 1616). The preview screenshot is screenshots/quiz-drive-image.jpg. The fixture used isolated MongoDB; no production quiz or Drive upload/sharing setting was changed. Local preview processes were stopped after verification.
+
+---
+
 # Shared throttling verification - 16 November 2026
 
 The complete verification run passed both TypeScript checks, 76 tests across eight files and both production builds. After adding majority write acknowledgement to counter updates, the API typecheck, all five focused counter tests and the API build passed again. Tests used disposable MongoDB databases only.

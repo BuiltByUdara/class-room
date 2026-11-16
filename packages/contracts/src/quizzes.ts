@@ -1,7 +1,10 @@
 import { z } from 'zod';
+import { driveQuestionImage } from './question-image.js';
 const id = z.string().regex(/^[a-f\d]{24}$/i);
 const optionId = z.string().regex(/^[a-zA-Z0-9_-]{1,40}$/);
 export const questionInputSchema = z.object({
+  imageUrl: z.string().trim().max(2048).refine(v => !v || Boolean(driveQuestionImage(v)), 'Paste a Google Drive image file link').optional(),
+  imageAlt: z.string().trim().max(500).optional(),
   type: z.enum(['single','multiple','boolean']), prompt: z.string().trim().min(1).max(2000), topic: z.string().trim().min(1).max(100),
   marks: z.number().int().min(1).max(100), options: z.array(z.object({ id: optionId, text: z.string().trim().min(1).max(500) }).strict()).min(2).max(8),
   correctOptionIds: z.array(optionId).min(1).max(8),

@@ -34,3 +34,5 @@ export interface BatchData { id: string; classId: string; name: string; schedule
 export interface EnrollmentData { id: string; studentId: string; studentName: string; batchId: string|null; status: string }
 export interface RelationshipData { id: string; parent: Member; student: Member }
 export interface WorkspaceStats { classes: number; students: number; batches: number; users?: number; children?: number }
+
+export { driveQuestionImage } from './question-image.js';

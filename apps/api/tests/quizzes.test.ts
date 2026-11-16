@@ -89,3 +89,27 @@ describe('Quiz engine invariants',()=>{
     const a=await start();expect((await call('student','post',`/attempts/${a.id}/submit`).send({version:0,answers:correct(a),score:100})).status).toBe(400);
   });
 });
+
+it('preserves question images through edit, duplication, snapshots and submission', async () => {
+  const imageUrl = 'https://drive.google.com/file/d/ExampleImageFile12345/view?resourcekey=sample-key';
+  const imageAlt = 'Triangle with three labelled angles';
+  input.questions[0] = { ...input.questions[0], imageUrl, imageAlt };
+  const saved = await call('teacher','patch',`/quizzes/${quizId}`).send(input);
+  expect(saved.status).toBe(200); expect(saved.body.data.questions[0]).toMatchObject({imageUrl,imageAlt});
+  const copy = await call('teacher','post',`/quizzes/${quizId}/duplicate`).send({});
+  expect(copy.status).toBe(201); expect(copy.body.data.questions[0]).toMatchObject({imageUrl,imageAlt});
+  await call('teacher','post',`/quizzes/${quizId}/publish`).send({});
+  const attempt = await start();
+  expect(attempt.questions.find(q => q.imageUrl)).toMatchObject({imageUrl,imageAlt});
+  expect(JSON.stringify(attempt)).not.toContain('correctOptionIds');
+  await Question.updateMany({quiz:quizId}, {$set:{imageUrl:'https://drive.google.com/file/d/DifferentImage12345/view'}});
+  const resumed = await call('student','get',`/attempts/${attempt.id}`);
+  expect(resumed.body.data.questions.find((q: {imageUrl?:string}) => q.imageUrl)).toMatchObject({imageUrl,imageAlt});
+  const submitted = await call('student','post',`/attempts/${attempt.id}/submit`).send({version:attempt.version,answers:correct(attempt)});
+  expect(submitted.status).toBe(200);
+  expect(submitted.body.data.questions.find((q: {imageUrl?:string}) => q.imageUrl)).toMatchObject({imageUrl,imageAlt});
+});
+it('rejects unsafe or non-Drive question links', async () => {
+  input.questions[0].imageUrl = 'javascript:alert(1)';
+  expect((await call('teacher','patch',`/quizzes/${quizId}`).send(input)).status).toBe(400);
+});

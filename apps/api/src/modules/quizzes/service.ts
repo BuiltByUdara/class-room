@@ -23,7 +23,7 @@ export async function eligibleQuiz(studentId:string,id:string,session?:ClientSes
 export async function quizDto(quiz:InstanceType<typeof Quiz>, teacher = false, studentId?:string, session?:ClientSession):Promise<QuizData> {
   const questions = await Question.find({quiz:quiz._id}).sort({position:1}).select(teacher ? '+correctOptionIds' : '').session(session || null);
   const dto:QuizData = {id:quiz.id,title:quiz.title,description:quiz.description || '',subject:quiz.subject,classId:String(quiz.class),batchId:quiz.batch ? String(quiz.batch):null,durationSeconds:quiz.durationSeconds,passingMarks:quiz.passingMarks,totalMarks:questions.reduce((s,q)=>s+q.marks,0),startsAt:quiz.startsAt.toISOString(),endsAt:quiz.endsAt.toISOString(),maxAttempts:quiz.maxAttempts,randomizeQuestions:quiz.randomizeQuestions,randomizeOptions:quiz.randomizeOptions,status:quiz.status,resultsPublished:quiz.resultsPublished,allowReview:quiz.allowReview};
-  if (teacher) { dto.questions = questions.map(q => ({type:q.type as QuestionInput['type'],prompt:q.prompt,topic:q.topic,marks:q.marks,options:q.options.map(o=>({id:o.id,text:o.text})),correctOptionIds:q.correctOptionIds})); dto.canEdit = !await QuizAttempt.exists({quiz:quiz._id}).session(session || null); }
+  if (teacher) { dto.questions = questions.map(q => ({type:q.type as QuestionInput['type'],prompt:q.prompt,imageUrl:q.imageUrl ?? undefined,imageAlt:q.imageAlt ?? undefined,topic:q.topic,marks:q.marks,options:q.options.map(o=>({id:o.id,text:o.text})),correctOptionIds:q.correctOptionIds})); dto.canEdit = !await QuizAttempt.exists({quiz:quiz._id}).session(session || null); }
   if (studentId) dto.attemptsUsed = await QuizAttempt.countDocuments({quiz:quiz._id,student:studentId}).session(session || null);
   return dto;
 }
@@ -42,7 +42,7 @@ export async function saveQuiz(actor:PublicUser,input:QuizInput,id?:string) {
 }
 const shuffle = <T>(items:T[]) => { const result = [...items]; for(let i=result.length-1;i>0;i--) { const j=randomInt(i+1); [result[i],result[j]]=[result[j],result[i]]; } return result; };
 // Snapshot remains server-only. Every outward field is explicitly selected below.
-const snapshotOf = (attempt:Attempt):Snapshot[] => (attempt.get('snapshot') || []).map((q:Snapshot) => ({id:q.id,type:q.type,prompt:q.prompt,topic:q.topic,marks:q.marks,options:q.options.map(o=>({id:o.id,text:o.text})),correctOptionIds:[...q.correctOptionIds]}));
+const snapshotOf = (attempt:Attempt):Snapshot[] => (attempt.get('snapshot') || []).map((q:Snapshot) => ({id:q.id,type:q.type,prompt:q.prompt,imageUrl:q.imageUrl ?? undefined,imageAlt:q.imageAlt ?? undefined,topic:q.topic,marks:q.marks,options:q.options.map(o=>({id:o.id,text:o.text})),correctOptionIds:[...q.correctOptionIds]}));
 export async function finalize(attempt:Attempt,session:ClientSession,now = new Date()) {
   if(attempt.status === 'submitted') return;
   const result=grade(snapshotOf(attempt),attempt.answers.map(a=>({questionId:String(a.question),optionIds:a.optionIds})),Number(attempt.get('passingMarks')));
@@ -71,7 +71,7 @@ export async function startAttempt(actor:PublicUser,quizId:string) {
     const count=await QuizAttempt.countDocuments({quiz:quizId,student:actor.id}).session(session);
     if(count>=quiz.maxAttempts) throw new HttpError(409,'ATTEMPT_LIMIT','You have used all attempts for this quiz');
     const questions=await Question.find({quiz:quizId}).sort({position:1}).select('+correctOptionIds').session(session);
-    let snapshot:Snapshot[]=questions.map(q=>({id:q.id,type:q.type as Snapshot['type'],prompt:q.prompt,topic:q.topic,marks:q.marks,options:q.options.map(o=>({id:o.id,text:o.text})),correctOptionIds:[...q.correctOptionIds]}));
+    let snapshot:Snapshot[]=questions.map(q=>({id:q.id,type:q.type as Snapshot['type'],prompt:q.prompt,imageUrl:q.imageUrl ?? undefined,imageAlt:q.imageAlt ?? undefined,topic:q.topic,marks:q.marks,options:q.options.map(o=>({id:o.id,text:o.text})),correctOptionIds:[...q.correctOptionIds]}));
     if(!snapshot.length) throw new HttpError(409,'EMPTY_QUIZ','This quiz has no questions');
     if(quiz.randomizeQuestions) snapshot=shuffle(snapshot); if(quiz.randomizeOptions) snapshot=snapshot.map(q=>({...q,options:shuffle(q.options)}));
     const now=new Date(); const [attempt]=await QuizAttempt.create([{quiz:quizId,student:actor.id,attemptNumber:count+1,startedAt:now,deadline:new Date(Math.min(now.getTime()+quiz.durationSeconds*1000,quiz.endsAt.getTime())),snapshot,quizTitle:quiz.title,passingMarks:quiz.passingMarks,version:0}],{session});
